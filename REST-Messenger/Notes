@@ -1,0 +1,43 @@
+New Project:  Maven project
+
+Archetype Group id: 	org.glassfish.jersey.archetypes
+Archetype Artifact id:	jersey-quickstart-webapp
+
+Project info:
+Group id: 	org.chase
+Artifact id: 	REST-Messenger
+Package: 	org.chase.messenger
+
+Add Tomcat Server:  Add REST-Messenger
+Run As: Server Application
+
+************************************************
+REST Client
+
+Go to www.getpostman.com or the chrome web store and install postman REST Client
+
+************************************************
+
+Change response format to JSON
+
+Open up POM.  uncomment the line dependency for JSON format support
+
+************************************************
+
+Testing POST with POSTMAN
+
+Change the Header to Content-Type
+Change the Value  to application/json
+
+************************************************
+
+Content Negotiation
+Need to update the @Produces annotation
+Produces(value = { MediaType.APPLICATION_JSON, MediaType.TEXT_XML })
+
+Header: Accept - tells the server what content type that the client needs
+Header: Content-Type - tells the server what content type that the client is sending
+
+XLM format
+Header: Accept OR Content-Type
+Value: text/xml OR application/json

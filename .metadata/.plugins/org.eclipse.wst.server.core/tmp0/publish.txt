@@ -1,0 +1,3 @@
+#GlassFish 3
+#Thu Oct 19 08:11:10 EDT 2017
+org.eclipse.jst.jee.server\:SOAP-Testmart=C\:\\Program Files\\Java\\glassfish5\\glassfish\\domains\\domain1\\eclipseApps\\SOAP-Testmart

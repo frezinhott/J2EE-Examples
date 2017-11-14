@@ -1,0 +1,4 @@
+0:0:0:0:0:0:0:1 - - [31/Oct/2017:10:17:20 -0400] "GET /REST-Messenger/webapi/messages HTTP/1.1" 200 1220
+127.0.0.1 - - [31/Oct/2017:10:37:10 -0400] "GET /REST-Messenger/webapi/messages/1 HTTP/1.1" 200 606
+127.0.0.1 - - [31/Oct/2017:11:06:51 -0400] "GET /REST-Messenger/webapi/messages/1/comments HTTP/1.1" 200 211
+127.0.0.1 - - [31/Oct/2017:11:14:52 -0400] "GET /REST-Messenger/webapi/messages/1 HTTP/1.1" 200 606

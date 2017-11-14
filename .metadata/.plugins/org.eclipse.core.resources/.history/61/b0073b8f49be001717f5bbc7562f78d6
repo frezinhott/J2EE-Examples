@@ -1,0 +1,27 @@
+package org.chase.REST_Messenger.client;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.Response;
+
+import org.chase.REST_Messenger.model.Message;
+
+public class MessengerClient {
+	public static void main(String[] args){
+		// Jax-RS client
+		Client client = ClientBuilder.newClient();
+		
+		// Point the client to a target resource.  Get the 1st message.
+		// .request - builds the request
+		// .get - posts an HTTP GET
+		Response response = client.target("http://localhost:8080/REST-Messenger/webapi/messages/1")
+			  .request()
+			  .get();
+		
+		// Get the message in the response wrapper
+		Message message = response.readEntity(Message.class);
+		
+		// Print the message 
+		System.out.println(message.getMessage());
+	}
+}
