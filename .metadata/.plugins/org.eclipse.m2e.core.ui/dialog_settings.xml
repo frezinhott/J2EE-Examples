@@ -47,6 +47,8 @@
 	</section>
 	<section name="MavenProjectWizardLocationPage">
 		<list key="location">
+			<item value="C:\Users\Trevor Chase\eclipseJ2EE-workspace\RestMessengerAdv"/>
+			<item value="C:\Users\Trevor Chase\eclipseJ2EE-workspace"/>
 		</list>
 		<list key="projectNameTemplate">
 			<item value="[artifactId]"/>
@@ -58,16 +60,10 @@
 	</section>
 	<section name="Maven2ProjectWizardArchifactPage">
 		<list key="package">
-			<item value="org.chase.REST_Messenger"/>
-			<item value="org.rest.messenger"/>
 		</list>
 		<list key="groupId">
-			<item value="org.chase"/>
-			<item value="org.rest"/>
 		</list>
 		<list key="artifactId">
-			<item value="REST-Messenger"/>
-			<item value="messenger"/>
 		</list>
 		<list key="projectNameTemplate">
 			<item value="[artifactId]"/>

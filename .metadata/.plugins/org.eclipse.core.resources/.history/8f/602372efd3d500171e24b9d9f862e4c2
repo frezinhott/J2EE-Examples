@@ -1,0 +1,156 @@
+package org.chase.rest_messenger_adv.service;
+
+import java.util.Date;
+import java.util.List;
+
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+
+import org.chase.rest_messenger_adv.database.MongoCommentMap;
+import org.chase.rest_messenger_adv.database.MongoMessageMap;
+import org.chase.rest_messenger_adv.database.MongoMessengerDB;
+import org.chase.rest_messenger_adv.model.Comment;
+import org.chase.rest_messenger_adv.model.ErrorMessage;
+import org.chase.rest_messenger_adv.model.Message;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+
+/**
+ * This Class retrieves and adds comments
+ * @author Trevor Chase
+ *
+ */
+public class CommentService {
+	
+	private MongoMessengerDB mongoMessengerDb = new MongoMessengerDB();
+	private DBCollection commentCollection = mongoMessengerDb.db.getCollection("comments");
+	private DBCollection messageCollection = mongoMessengerDb.db.getCollection("messages");
+	
+	CommentService(){
+		mongoMessengerDb.getInstance();
+	}
+	
+	// Service call to get all comments and convert the DBObject to Comment objects.
+	public List<Comment> getAllComments(long messageId){
+		ErrorMessage errorMessage = new ErrorMessage("Not Found", 404, "http://link.to.documentation");
+		// Return a Response with the JSON error message and a status not found code
+		Response response = Response.status(Status.NOT_FOUND)
+				.entity(errorMessage)
+				.build();
+		
+		MongoMessageMap mongoMessageMap = new MongoMessageMap();
+		DBCursor cursor = messageCollection.find(new BasicDBObject("id", messageId));
+		
+		Message message = mongoMessageMap.mongoToMessage(cursor);
+		
+		if(message == null){
+			// Throw JAX-RS pre-loaded exception (no mapping needed)
+			// This is not the preferred method
+			throw new WebApplicationException(response);
+		}
+		
+		MongoCommentMap mongoCommentMap = new MongoCommentMap();
+		cursor = commentCollection.find(new BasicDBObject("messageId", messageId));
+		
+		List<Comment> comments = mongoCommentMap.mongoToComments(cursor);
+		
+		if(comments.size()==0){
+			// Throw JAX-RS pre-loaded exception (no mapping needed)
+			// This is not the preferred method
+			throw new NotFoundException(response);			
+		}
+		
+		return comments;
+	}
+	
+	public Comment getComment(long messageId, long commentId){
+		ErrorMessage errorMessage = new ErrorMessage("Not Found", 404, "http://link.to.documentation");
+		// Return a Response with the JSON error message and a status not found code
+		Response response = Response.status(Status.NOT_FOUND)
+				.entity(errorMessage)
+				.build();
+		
+		MongoCommentMap mongoCommentMap = new MongoCommentMap();
+		DBCursor cursor = commentCollection.find(new BasicDBObject("id", commentId));
+		
+		Comment comment = mongoCommentMap.mongoToComment(cursor);
+		
+		if(comment == null){
+			// Throw JAX-RS pre-loaded exception (no mapping needed)
+			// This is not the preferred method
+			throw new NotFoundException(response);
+		}
+		return comment;
+		
+	}
+	
+
+	public Comment addComment(long messageId, Comment comment){
+		
+		// Order id Descending order
+		BasicDBObject searchQuery = new BasicDBObject("id", -1);
+		
+		// Find the 1st Document with the highest id
+		DBCursor cursor = commentCollection.find().sort(searchQuery).limit(1);
+		
+		MongoCommentMap mongoCommentMap = new MongoCommentMap();
+		Comment lastComment = mongoCommentMap.mongoToComment(cursor);
+		long newId = lastComment.getId() + 1;
+		
+		// Update the new comment with the comment and message Ids
+		comment.setId(newId);
+		comment.setMessageId(messageId);
+		
+		BasicDBObject newComment = new BasicDBObject();
+		newComment.put("id", newId);
+		newComment.put("messageId", messageId);
+		newComment.put("comment", comment.getComment());
+		newComment.put("created", new Date().toString());
+		newComment.put("author", comment.getAuthor());
+
+		// Insert the comment into the comments Collection
+		commentCollection.insert(newComment);		
+		
+		return comment;
+	}
+	
+	public Comment updateComment(long messageId, Comment comment){
+		
+		// If the comment has not been created yet, return null
+		if(comment.getId() <= 0){
+			return null;
+		}
+		
+		BasicDBObject updatedComment = new BasicDBObject();
+		updatedComment.put("id", comment.getId());
+		updatedComment.put("messageId", comment.getMessageId());
+		updatedComment.put("comment", comment.getComment());
+		updatedComment.put("created", comment.getCreated());
+		updatedComment.put("author", comment.getAuthor());
+
+		// Save the comment into the comments Collection
+		commentCollection.save(updatedComment);	
+		return comment;		
+	}
+	
+	public Comment removeComment(long messageId, long commentId){
+		
+		// Get the comment from the DB
+		BasicDBObject query = new BasicDBObject("id", commentId);
+		DBCursor cursor = commentCollection.find(query);
+		
+		// Populate the Comment that is about to be removed
+		MongoCommentMap mongoCommentMap = new MongoCommentMap();
+		Comment comment = mongoCommentMap.mongoToComment(cursor);
+		
+		// Remove the comment from Mongo
+		commentCollection.remove(query);
+		
+		return comment;	
+	}
+
+}

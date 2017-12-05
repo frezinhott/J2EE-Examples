@@ -1,7 +1,0 @@
-package org.chase.rest.client;
-
-public class MessengerClient {
-	public static void main(String[] args){
-		Client client;
-	}
-}

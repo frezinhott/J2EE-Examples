@@ -1,0 +1,460 @@
+package org.chase.rest_messenger_adv.resources;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ws.rs.BeanParam;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriInfo;
+
+import org.chase.rest_messenger_adv.model.Comment;
+import org.chase.rest_messenger_adv.model.Message;
+import org.chase.rest_messenger_adv.resources.beans.MessageFilterBean;
+import org.chase.rest_messenger_adv.service.CommentService;
+import org.chase.rest_messenger_adv.service.MessageService;
+
+/**
+ * This resource is accessed by the following URL:
+ * http://localhost:8080/REST-Messenger/webapi/messages
+ * 
+ * @GET 	configures this method to be executed when ever there is a HTTP GET    call on this resource
+ * @POST	configures this method to be executed when ever there is a HTTP POST   call on this resource
+ * @PUT		configures this method to be executed when ever there is a HTTP PUT    call on this resource
+ * @DELETE	configures this method to be executed when ever there is a HTTP DELETE call on this resource
+ * 
+ * @Path	Adds a sub-resource to the /messages resource
+ * 
+ * @PathParam("variable") Separated by a "?".  Adds the {variable} path parameter as a variable in the method
+ * 
+ * @QueryParam("variable") Adds the "variable" as a variable in the method
+ * 
+ * @BeanParam [bean class] Encapsulates all of the query params into a bean
+ * 
+ * @Consumes: MediaType specifies the input  content format
+ * @Produces: MediaType specifies the return content format
+ * 
+ * The @Consumes and @Produces annotations can overload a method to distinguish between 2 different GET methods
+ * 
+ * MediaType.TEXT_PLAIN 		returns plain text
+ * MediaType.APPLICATION_XML 	returns xml format.  
+ *								JAX-B Annotation (@XmlRootElement) on the message model will be needed.
+ * MediaType.APPLICATION_JSON 	returns JSON format.
+ * 
+ * 
+ * @author Trevor Chase
+ *
+ */
+
+/**
+ *  @Produces(value = { MediaType.APPLICATION_JSON, MediaType.TEXT_XML })
+ *  Allows for both JSON or XML format.  Needs "Accept" in the Header with the value that the client expects
+ *  Header: Accept
+ *  Value: text/xml OR text/plain OR application/json
+ *  
+ *  @Consumes(value = { MediaType.APPLICATION_JSON, MediaType.TEXT_XML })
+ *  Allows for both JSON or XML format.  Needs "Content-Type" in the Header with the value that the client expects
+ *  Header: Content-Type
+ *  Value: text/xml OR text/plain OR application/json
+ *
+ */
+@Path("/messages") 
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
+public class MessageResource {
+		
+	MessageService messageService = new MessageService();
+	CommentService commentService = new CommentService();
+	
+	/**
+	 * Get all messages
+	 * http://localhost:8080/RestMessengerAdv/api/messages
+	 * 
+	 * Get all messages for any given year
+	 * http://localhost:8080/RestMessengerAdv/api/messages?year=variable
+	 * 
+	 * Get #=size messages starting at id=start
+	 * http://localhost:8080/RestMessengerAdv/api/messages?start=variable&size=variable
+	 * 
+	 * @return returns a list of all messages
+	 */
+	@GET
+	public Response getMessages(@BeanParam MessageFilterBean filterBean,
+									 @Context UriInfo uriInfo){
+		if(filterBean.getYear() > 0){
+			List<Message> messagesForYear = messageService.getAllMessagesForYear(filterBean.getYear());
+			return Response.status(Status.OK)
+					// Add the new message to the Response
+					.entity(messagesForYear)
+					// Build the Response
+					.build();
+		}
+		
+		if(filterBean.getStart() > 0 && filterBean.getSize() > 0){
+			List<Message> messagesPagenated = messageService.getAllMessagesPagenated(filterBean.getStart(), filterBean.getSize());
+			return Response.status(Status.OK)
+					// Add the new message to the Response
+					.entity(messagesPagenated)
+					// Build the Response
+					.build();
+		}
+		List<Message> messages = messageService.getAllMessages();
+
+		// Loop through the messages and add the URI information to each message
+		for(Message message : messages){
+
+			// Construct the URI link to self
+			String uriSelf = getUriForSelf(uriInfo, message);
+			
+			// Construct the URI link to the author's profile
+			String uriProfile = getUriForProfile(uriInfo, message);
+			
+			// Construct the URI link to the message comments
+			String uriComments = getUriForComments(uriInfo, message);
+					
+			// Add the URI link to self
+			message.addLink(uriSelf, "self");
+			
+			// Add the URI link to profile
+			message.addLink(uriProfile, "profile");	
+			
+			// Add the URI link to the comment
+			message.addLink(uriComments, "comments");
+			
+			// Get message comments and assign the URI information to them
+			List<Comment> comments = commentService.getAllComments(message.getId());			
+			List<Comment> messageComments = new ArrayList<>();
+		
+			for(Comment comment : comments){
+				// Construct the URI link to the message comments
+				String uriComment = getUriForComment(uriInfo, message, comment);
+				
+				// Add the URI link to the comment
+				comment.addLink(uriComment, "comment");
+				
+				// Add the updated comment to the new message comment map
+				messageComments.add(comment);
+			}
+
+			message.setComments(messageComments);
+		}
+
+		// Set the Response status to 200 (OK)
+		return Response.status(Status.OK)
+				// Add the new message to the Response
+				.entity(messages)
+				// Build the Response
+				.build();
+	}
+
+	/**
+	 * http://localhost:8080/RestMessengerAdv/api/messages/{messageId} 
+	 * 
+	 * @return returns the message corresponding to the messageId with HATEOAS URI link information
+	 */
+	@GET
+	@Path("/{messageId}")
+	public Response getMesaage(@PathParam("messageId") long messageId, @Context UriInfo uriInfo){
+		// Get the corresponding message
+		Message message = messageService.getMessage(messageId);
+
+		// Construct the URI link to self
+		String uriSelf = getUriForSelf(uriInfo, message);
+		
+		// Construct the URI link to the author's profile
+		String uriProfile = getUriForProfile(uriInfo, message);
+		
+		// Construct the URI link to the message comments
+		String uriComments = getUriForComments(uriInfo, message);
+				
+		// Add the URI link to self
+		message.addLink(uriSelf, "self");
+		
+		// Add the URI link to profile
+		message.addLink(uriProfile, "profile");
+		
+		// Add the URI link to profile
+		message.addLink(uriComments, "comments");
+		
+		// Get message comments and assign the URI information to them
+		List<Comment> comments = commentService.getAllComments(message.getId());			
+		List<Comment> messageComments = new ArrayList<>();
+		
+		for(Comment comment : comments){
+			// Construct the URI link to the message comments
+			String uriComment = getUriForComment(uriInfo, message, comment);
+			
+			// Add the URI link to the comment
+			comment.addLink(uriComment, "comment");
+			
+			// Add the updated comment to the new message comment map
+			messageComments.add(comment);
+		}
+		message.setComments(messageComments);
+		
+		// Set the Response status to 201 (CREATED)
+		return Response.status(Status.OK)
+				// Add the new message to the Response
+				.entity(message)
+				// Build the Response
+				.build();
+	}
+
+	/**
+	 * This method constructs the URI link to the message comments resource
+	 * http://localhost:8080/RestMessengerAdv/api/messages/{messageId}/comments
+	 * 
+	 * @param uriInfo
+	 * @param message
+	 * @return
+	 */
+	private String getUriForComments(UriInfo uriInfo, Message message) {
+		// Build the URI link
+		// http://localhost:8080/RestMessengerAdv/api
+		String uri = uriInfo.getBaseUriBuilder()
+				// Add /messages
+				.path(MessageResource.class)
+				// Add /{messageId}/comments
+				// Pass in the resource class and the method that has the @Path annotation
+				.path(MessageResource.class, "getCommentResource")
+				// Add the messageId to the {messageId} variable
+				.resolveTemplate("messageId", message.getId())
+				// Build the URI
+				.build()
+				// Convert the URI to a String
+				.toString();
+		
+		return uri;			
+	}
+
+	/**
+	 * This method constructs the URI link to the message comments resource
+	 * http://localhost:8080/RestMessengerAdv/api/messages/{messageId}/comments/{commentId}
+	 * 
+	 * @param uriInfo
+	 * @param message
+	 * @return
+	 */
+	private String getUriForComment(UriInfo uriInfo, Message message, Comment comment) {
+		// Build the URI link
+		// http://localhost:8080/RestMessengerAdv/api
+		String uri = uriInfo.getBaseUriBuilder()
+				// Add /messages
+				.path(MessageResource.class)
+				// Add /{messageId}/comments
+				// Pass in the resource class and the method that has the @Path annotation
+				.path(MessageResource.class, "getCommentResource")
+				// Add /{commentId}
+				// Pass in the resource class and the method that has the @Path annotation
+				.path(CommentResource.class, "getComment")
+				// Add the messageId to the {messageId} variable
+				.resolveTemplate("messageId", message.getId())
+				// Add the messageId to the {messageId} variable
+				.resolveTemplate("commentId", comment.getId())
+				// Build the URI
+				.build()
+				// Convert the URI to a String
+				.toString();
+		
+		return uri;			
+	}
+
+	/**
+	 * This method constructs the URI link to the message author's profile
+	 * http://localhost:8080/RestMessengerAdv/api/profiles/{profileName}
+	 * 
+	 * @param uriInfo
+	 * @param message
+	 * @return
+	 */
+	private String getUriForProfile(UriInfo uriInfo, Message message) {
+		// Build the URI link
+		// http://localhost:8080/RestMessengerAdv/api
+		String uri = uriInfo.getBaseUriBuilder()
+				// Add /profiles
+				.path(ProfileResource.class)
+				// Add /{profileName}
+				.path(message.getAuthor())
+				// Build the URI
+				.build()
+				// Convert the URI to a String
+				.toString();
+		
+		return uri;
+	}
+
+	/**
+	 * This method constructs the URI link to self
+	 * http://localhost:8080/RestMessengerAdv/api/messages/{messageId}
+	 * 
+	 * @param uriInfo
+	 * @param message
+	 * @return
+	 */
+	private String getUriForSelf(UriInfo uriInfo, Message message) {
+		// Build the URI link
+		// http://localhost:8080/RestMessengerAdv/api
+		String uri = uriInfo.getBaseUriBuilder()
+				// Add /messages
+				.path(MessageResource.class)
+				// Add /{messageId}
+				.path(Long.toString(message.getId()))
+				// Build the URI
+				.build()
+				// Convert the URI to a String
+				.toString();
+		return uri;
+	}
+
+	/**
+	 * http://localhost:8080/RestMessengerAdv/api/messages
+	 * Adds a new message
+	 * 
+	 * @return returns a Response with a 201 status code, the newly added message and the URI location
+	 * @throws URISyntaxException 
+	 */
+	@POST
+	public Response addMessage(@Context UriInfo uriInfo, Message message){
+		// Add the new message
+		Message newMessage = messageService.addMessage(message);
+/*		
+ * 		The commented out code will cause duplicate links when getAllMessages() is called
+ * 
+		// Construct the URI link to self
+		String uriSelf = getUriForSelf(uriInfo, newMessage);
+		
+		// Construct the URI link to the author's profile
+		String uriProfile = getUriForProfile(uriInfo, newMessage);
+		
+		// Construct the URI link to the message comments
+		String uriComments = getUriForComments(uriInfo, newMessage);
+				
+		// Add the URI link to self
+		newMessage.addLink(uriSelf, "self");
+		
+		// Add the URI link to profile
+		newMessage.addLink(uriProfile, "profile");
+		
+		// Add the URI link to profile
+		newMessage.addLink(uriComments, "comments");
+*/		
+		// Assign the message ID to a string value
+		String newId = String.valueOf(newMessage.getId());
+		
+		// Create a new URI with the message ID in it and build
+		URI uri =uriInfo.getAbsolutePathBuilder().path(newId).build();
+		
+		// Set the Response status to 201 (CREATED)
+		return Response.created(uri)
+				// Add the new message to the Response
+				.entity(newMessage)
+				// Build the Response
+				.build();
+	}
+	
+	/**
+	 * http://localhost:8080/RestMessengerAdv/api/messages/{messageId}
+	 * Updates an existing message
+	 * 
+	 * @return returns the updated message corresponding to the messageId
+	 */
+	@PUT
+	@Path("/{messageId}")
+	public Response updateMessage(@Context UriInfo uriInfo,
+								 @PathParam("messageId") long messageId, 
+								 Message message){
+		// We must set the ID in the message in order to update it
+		message.setId(messageId);
+		Message updatedMessage = messageService.updateMessage(message);
+		
+		// Construct the URI link to self
+		String uriSelf = getUriForSelf(uriInfo, updatedMessage);
+		
+		// Construct the URI link to the author's profile
+		String uriProfile = getUriForProfile(uriInfo, updatedMessage);
+		
+		// Construct the URI link to the message comments
+		String uriComments = getUriForComments(uriInfo, updatedMessage);
+				
+		// Add the URI link to self
+		updatedMessage.addLink(uriSelf, "self");
+		
+		// Add the URI link to profile
+		updatedMessage.addLink(uriProfile, "profile");
+		
+		// Add the URI link to profile
+		updatedMessage.addLink(uriComments, "comments");
+		
+		// Set the Response status to 204 (NO_CONTENT)
+		return Response.status(Status.NO_CONTENT)
+				// Add the new message to the Response
+				.entity(updatedMessage)
+				// Build the Response
+				.build();
+	}
+	
+	/**
+	 * http://localhost:8080/RestMessengerAdv/api/messages/{messageId}
+	 * Deletes an existing message
+	 * 
+	 * @return returns the deleted message corresponding to the messageId
+	 */
+	@DELETE
+	@Path("/{messageId}")
+	public Response deleteMessage(@PathParam("messageId") long messageId){
+		Message message = messageService.removeMessage(messageId);
+		// Set the Response status to 204 (OK)
+		return Response.status(Status.OK)
+				// Add the new message to the Response
+				.entity(message)
+				// Build the Response
+				.build();
+	}
+	
+	/**
+	 * http://localhost:8080/RestMessengerAdv/api/messages/{messageId}/comments
+	 * 
+	 * This method hands off the responsibilities to the CommentResource class
+	 * 
+	 * @return
+	 */
+	@Path("/{messageId}/comments")
+	public CommentResource getCommentResource(){
+		return new CommentResource();
+	}
+	
+	/**
+	 * http://localhost:8080/RestMessengerAdv/api/messages/test
+	 * 
+	 * @return returns the text: Test
+	 */
+	@GET
+	@Path("/test")
+	public String getTest(){
+		return "Test";
+	}
+	
+	/**
+	 * http://localhost:8080/RestMessengerAdv/api/messages/test/{regExpression: * }
+	 * regExpression : \\d+ - only valid if input is a number
+	 * 
+	 * @return returns the input as long as it meets the regular expression requirements
+	 */
+	@GET
+	@Path("/test/{regExpression : \\d+}")
+	public String getExpression(@PathParam("regExpression") String regExpression){
+		return regExpression;
+	}
+}

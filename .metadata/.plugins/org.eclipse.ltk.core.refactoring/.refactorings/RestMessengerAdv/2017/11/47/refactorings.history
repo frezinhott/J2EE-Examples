@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy element &apos;DateMessageBodyWriter.java&apos; to &apos;RestMessengerAdv/src/main/java/org.chase.rest_messenger_adv&apos;&#x0D;&#x0A;- Original project: &apos;RestMessengerAdv&apos;&#x0D;&#x0A;- Destination element: &apos;RestMessengerAdv/src/main/java/org.chase.rest_messenger_adv&apos;&#x0D;&#x0A;- Original element: &apos;org.chase.rest_messenger_adv.DateMessageBodyWriter.java&apos;" description="Copy compilation unit" destination="/src\/main\/java&lt;org.chase.rest_messenger_adv" element1="/src\/main\/java&lt;org.chase.rest_messenger_adv{DateMessageBodyWriter.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1511184542209" units="1" version="1.0"/>
+</session>

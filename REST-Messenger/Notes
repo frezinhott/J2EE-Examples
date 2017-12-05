@@ -12,6 +12,27 @@ Add Tomcat Server:  Add REST-Messenger
 Run As: Server Application
 
 ************************************************
+Update Web.xml
+
+The url-pattern webapi will be used as a sub-path in:
+http://localhost:8080/REST-Messenger/webapi/...
+
+    <servlet>
+        <servlet-name>Jersey Web Application</servlet-name>
+        <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
+        <init-param>
+            <param-name>jersey.config.server.provider.packages</param-name>
+            <param-value>org.chase.REST_Messenger</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>Jersey Web Application</servlet-name>
+        <url-pattern>/webapi/*</url-pattern>
+    </servlet-mapping>
+
+************************************************
+
 REST Client
 
 Go to www.getpostman.com or the chrome web store and install postman REST Client
@@ -21,6 +42,9 @@ Go to www.getpostman.com or the chrome web store and install postman REST Client
 Change response format to JSON
 
 Open up POM.  uncomment the line dependency for JSON format support
+
+After updating the POM, update it to include the libraries:
+Right click on the project >> Maven >> Update Project
 
 ************************************************
 

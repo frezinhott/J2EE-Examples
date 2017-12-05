@@ -1,0 +1,10 @@
+package org.chase.rest_messenger_adv.database;
+
+public class MongoDBTest {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

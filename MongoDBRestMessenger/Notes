@@ -1,0 +1,14 @@
+New Project:  Maven project
+
+Archetype Group id: 	org.apache.maven.archetypes
+Archetype Artifact id:	maven-archetype-webapp
+
+Project info:
+Group id: 	org.chase
+Artifact id: 	RestMessengerAdv
+Package: 	org.chase.RestMessengerAdv
+
+Add Tomcat Server:  Add RestMessengerAdv
+Run As: Server Application
+
+************************************************

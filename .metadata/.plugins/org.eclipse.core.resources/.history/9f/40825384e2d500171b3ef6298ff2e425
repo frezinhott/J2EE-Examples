@@ -1,0 +1,46 @@
+package org.chase.rest_messenger_adv.database;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.chase.rest_messenger_adv.model.Message;
+
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+
+public class MongoMessageMap {
+	
+	public Message mongoToMessage(DBCursor cursor){
+		Message message = new Message();
+
+		if(cursor.hasNext()){
+
+			DBObject obj = cursor.next();
+			message.setId((long)obj.get("id"));
+			message.setMessage((String)obj.get("message"));
+			message.setCreated((Date)obj.get("created"));
+			message.setAuthor((String)obj.get("author"));
+		}
+
+		return message;
+	}
+
+	public List<Message> mongoToMessages(DBCursor cursor){
+System.out.println("IN mongoToMessages");
+		List<Message> messages = new ArrayList<Message>();
+		
+		while (cursor.hasNext()) {
+			DBObject obj = cursor.next();
+			Message message = new Message();
+			message.setId((long)obj.get("id"));
+			message.setMessage((String)obj.get("message"));
+			message.setCreated((Date)obj.get("created"));
+			message.setAuthor((String)obj.get("author"));
+			messages.add(message);
+		}
+System.out.println("messages.size(): " + messages.size());		
+		return messages;
+	}	
+	
+}

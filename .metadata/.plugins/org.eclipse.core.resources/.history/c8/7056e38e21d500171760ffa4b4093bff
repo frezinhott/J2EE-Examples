@@ -1,0 +1,17 @@
+package org.chase.rest_messenger_adv.database;
+
+public class MongoMessengerDB {
+
+	private static MongoMessengerDB instance = null;
+   
+	public MongoMessengerDB() {
+	 
+	}
+
+	public static MongoMessengerDB getInstance() {
+		if(instance == null) {
+			instance = new MongoMessengerDB();
+		}
+		return instance;
+	}	
+}

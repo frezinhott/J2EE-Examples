@@ -1,0 +1,76 @@
+package org.chase.rest_messenger_adv.service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.chase.rest_messenger_adv.database.DatabaseClass;
+import org.chase.rest_messenger_adv.database.MongoMessageMap;
+import org.chase.rest_messenger_adv.database.MongoMessengerDB;
+import org.chase.rest_messenger_adv.database.MongoProfileMap;
+import org.chase.rest_messenger_adv.model.Profile;
+
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+
+
+/**
+ * This Class retrieves and adds user profiles
+ * @author Trevor Chase
+ *
+ */
+public class ProfileService {
+
+	private Map<String, Profile> profiles = DatabaseClass.getProfiles();
+	private MongoMessengerDB mongoMessengerDb = new MongoMessengerDB();
+	private DBCollection profileCollection = mongoMessengerDb.db.getCollection("profiles");
+	
+	// Seed the message map with some initial values
+	public ProfileService(){
+		mongoMessengerDb.getInstance();
+	}
+	
+	// Service call to get all profiles.  In the real world we would connect to a DB to retrieve these.
+	public List<Profile> getAllProfiles(){
+
+		MongoProfileMap mongoProfileMap = new MongoProfileMap();
+		DBCursor cursor = profileCollection.find();
+		
+		// returns a collection of messages
+		return mongoProfileMap.mongoToProfiles(cursor);
+		
+	}
+	
+	public Profile getProfile(String profileName){
+		// gets and returns the message that is mapped to the id value
+		return profiles.get(profileName);
+	}
+	
+	public Profile addProfile(Profile profile){
+		// Set the id to the next available id
+		profile.setId(profiles.size() + 1);
+		
+		// Adds a profile to the map
+		profiles.put(profile.getProfileName(), profile);
+		
+		return profile;
+	}
+	
+	public Profile updateProfile(Profile profile){
+		// If the profile has not been created yet, return null
+		if(profile.getProfileName().isEmpty()){
+			return null;
+		}
+		
+		// Updates the profile in the map
+		profiles.put(profile.getProfileName(), profile);
+		
+		return profile;		
+	}
+	
+	public Profile removeProfile(String profileName){
+		// Remove and return the profile that was removed
+		return profiles.remove(profileName);
+	}
+
+}

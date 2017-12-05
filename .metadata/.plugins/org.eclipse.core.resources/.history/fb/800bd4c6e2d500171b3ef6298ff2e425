@@ -1,0 +1,150 @@
+package org.chase.rest_messenger_adv.service;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+import org.chase.rest_messenger_adv.database.MongoMessageMap;
+import org.chase.rest_messenger_adv.database.MongoMessengerDB;
+import org.chase.rest_messenger_adv.exception.DataNotFoundException;
+import org.chase.rest_messenger_adv.model.Message;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+
+/**
+ * This Class retrieves and adds messages
+ * @author Trevor Chase
+ *
+ */
+public class MessageService {
+	
+	private MongoMessengerDB mongoMessengerDb = new MongoMessengerDB();
+	private DBCollection messageCollection = mongoMessengerDb.db.getCollection("messages");
+	
+	public MessageService(){
+		mongoMessengerDb.getInstance();
+	}
+	
+	// Service call to get all messages.
+	public List<Message> getAllMessages(){
+System.out.println("IN getAllMessages()");
+		MongoMessageMap mongoMessageMap = new MongoMessageMap();
+		DBCursor cursor = messageCollection.find();
+		
+		// returns a collection of messages
+		return mongoMessageMap.mongoToMessages(cursor);
+		
+	}
+	
+	// Gets all Messages for any given year
+	public List<Message> getAllMessagesForYear(int year){
+		List<Message> messagesForYear = new ArrayList<>();
+		
+		// Get a calendar instance to compare the year
+		Calendar calendar = Calendar.getInstance();
+		
+		List<Message> messages = getAllMessages();
+		
+		// Loop through every Message to see if it matches the identified year
+		for(Message message : messages){
+			// Sets the calendar date/time to its input
+			calendar.setTime(message.getCreated());
+			// If the calendar year matches the input year, add the message
+			if(calendar.get(Calendar.YEAR) == year){
+				messagesForYear.add(message);
+			}
+		}
+		return messagesForYear;
+	}
+	
+	// Gets #=size Messages beginning at the id=start 
+	public List<Message> getAllMessagesPagenated(int start, int size){
+		List<Message> messages = getAllMessages();
+		
+		// If the input parameters are invalid, return and empty list
+		if(start + size > messages.size())
+			return new ArrayList<Message>();
+		
+		// Return the sub list
+		return messages.subList(start, start + size);
+	}
+	
+	public Message getMessage(long id){
+		
+		MongoMessageMap mongoMessageMap = new MongoMessageMap();
+		DBCursor cursor = messageCollection.find(new BasicDBObject("id", id));
+		
+		Message message = mongoMessageMap.mongoToMessage(cursor);
+		
+		if (message == null){
+			throw new DataNotFoundException("Message with ID " + id + " not found");
+		}
+		return message;
+	}
+	
+	public Message addMessage(Message message){
+
+		// Order id Descending order
+		BasicDBObject searchQuery = new BasicDBObject("id", -1);
+		
+		// Find the 1st Document with the highest id
+		DBCursor cursor = messageCollection.find().sort(searchQuery).limit(1);
+	
+		MongoMessageMap mongoMessageMap = new MongoMessageMap();
+		Message lastMessage = mongoMessageMap.mongoToMessage(cursor);
+
+		// Set the id to the next available id
+		long newId = lastMessage.getId() + 1;		
+
+		// Update the new comment with the comment and message Ids
+		message.setId(newId);
+		
+		BasicDBObject newMessage = new BasicDBObject();
+		newMessage.put("id", newId);
+		newMessage.put("message", message.getMessage());
+		newMessage.put("created", new Date().toString());
+		newMessage.put("author", message.getAuthor());
+
+		// Insert the message into the messages Collection
+		messageCollection.insert(newMessage);		
+		
+		return message;
+	}
+	
+	public Message updateMessage(Message message){
+		// If the message has not been created yet, return null
+		if(message.getId() <= 0){
+			return null;
+		}
+		
+		BasicDBObject updatedMessage = new BasicDBObject();
+		updatedMessage.put("id", message.getId());
+		updatedMessage.put("message", message.getMessage());
+		updatedMessage.put("created", message.getCreated());
+		updatedMessage.put("author", message.getAuthor());
+
+		// Save the message into the messages Collection
+		messageCollection.save(updatedMessage);		
+		
+		return message;		
+	}
+	
+	public Message removeMessage(long id){
+		// Get the comment from the DB
+		BasicDBObject query = new BasicDBObject("id", id);
+		DBCursor cursor = messageCollection.find(query);
+		
+		// Populate the Comment that is about to be removed
+		MongoMessageMap mongoMessageMap = new MongoMessageMap();
+		Message message = mongoMessageMap.mongoToMessage(cursor);
+		
+		// Remove the comment from Mongo
+		messageCollection.remove(query);
+		
+		return message;	
+	}
+	
+}
